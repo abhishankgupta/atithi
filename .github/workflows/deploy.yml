@@ -1,0 +1,63 @@
+name: Deploy
+
+# Every push to main: run CI, build ONE Docker image, deploy it to test.
+# Production then waits for a required reviewer to approve in GitHub,
+# and deploys the exact same image that passed on test.
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  build-image:
+    name: Build API image
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: meta
+        name: Compute image name
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/atithi-api:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: ${{ steps.meta.outputs.image }}
+          build-args: ATITHI_VERSION=${{ github.sha }}
+
+  deploy-test:
+    name: Test
+    needs: build-image
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: test
+      image: ${{ needs.build-image.outputs.image }}
+    secrets: inherit
+
+  deploy-production:
+    name: Production
+    needs: [build-image, deploy-test]
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: production
+      image: ${{ needs.build-image.outputs.image }}
+    secrets: inherit

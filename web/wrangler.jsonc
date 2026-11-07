@@ -1,0 +1,13 @@
+// Cloudflare Workers static-assets config for the React app.
+// The pipeline overrides "name" per environment (atithi-web-test / atithi-web).
+// dist/_headers (security headers) is written by vite.config.ts at build time.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "atithi-web",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    // Serve index.html for unknown paths so React Router handles deep links.
+    "not_found_handling": "single-page-application"
+  }
+}

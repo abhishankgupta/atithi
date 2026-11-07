@@ -1,0 +1,21 @@
+# Backend
+backend/build/
+backend/.gradle/
+backend/bin/
+*.class
+
+# Frontend
+web/node_modules/
+web/dist/
+web/.env
+web/.env.local
+
+# Editors and OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Secrets
+.env
+*.pem

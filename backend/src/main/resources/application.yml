@@ -1,0 +1,56 @@
+spring:
+  application:
+    name: atithi-api
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/atithi}
+    username: ${SPRING_DATASOURCE_USERNAME:atithi}
+    password: ${SPRING_DATASOURCE_PASSWORD:atithi}
+    hikari:
+      # Neon's free tier has few connections; keep the pool small.
+      maximum-pool-size: ${DB_POOL_SIZE:5}
+      minimum-idle: 1
+      connection-timeout: 30000
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 11MB
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+  forward-headers-strategy: framework
+  error:
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+atithi:
+  environment: ${ATITHI_ENVIRONMENT:local}
+  version: ${ATITHI_VERSION:dev}
+  cors-origins: ${ATITHI_CORS_ORIGINS:http://localhost:5173}
+  jwt:
+    # 32+ characters. Required when ATITHI_ENVIRONMENT=production (the API refuses to start without it).
+    # Elsewhere, if unset, a random key is used per restart.
+    secret: ${ATITHI_JWT_SECRET:}
+
+logging:
+  level:
+    root: INFO
