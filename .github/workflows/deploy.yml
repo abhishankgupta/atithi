@@ -28,7 +28,7 @@ jobs:
     outputs:
       image: ${{ steps.meta.outputs.image }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - id: meta
         name: Compute image name
         run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/atithi-api:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
@@ -37,7 +37,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: backend
           push: true
