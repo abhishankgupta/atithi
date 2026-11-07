@@ -1,0 +1,113 @@
+name: Deploy to one environment
+
+# Reusable: deploys a given API image to Render and the matching web build to
+# Cloudflare Workers (static assets), for the GitHub environment named in `environment`.
+# The "production" environment has a required reviewer, so this job pauses
+# until that person clicks Approve in GitHub.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      image:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ vars.WEB_URL }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check this environment is configured
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          API_URL: ${{ vars.API_URL }}
+          WEB_URL: ${{ vars.WEB_URL }}
+          CF_WORKER: ${{ vars.CF_WORKER_NAME }}
+        run: |
+          missing=""
+          [ -z "${DEPLOY_HOOK}" ] && missing="${missing} secret:RENDER_DEPLOY_HOOK"
+          [ -z "${CF_TOKEN}" ] && missing="${missing} secret:CLOUDFLARE_API_TOKEN"
+          [ -z "${API_URL}" ] && missing="${missing} var:API_URL"
+          [ -z "${WEB_URL}" ] && missing="${missing} var:WEB_URL"
+          [ -z "${CF_WORKER}" ] && missing="${missing} var:CF_WORKER_NAME"
+          if [ -n "${missing}" ]; then
+            echo "::error::The '${{ inputs.environment }}' environment is not set up yet. Missing:${missing}. See docs/SETUP.md."
+            exit 1
+          fi
+
+      - name: Deploy API image to Render
+        env:
+          DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          IMAGE: ${{ inputs.image }}
+        run: |
+          set -euo pipefail
+          encoded=$(python3 -c 'import os, urllib.parse; print(urllib.parse.quote(os.environ["IMAGE"], safe=""))')
+          curl -fsS -X POST "${DEPLOY_HOOK}&imgURL=${encoded}" > /dev/null
+          echo "Deploy triggered for ${IMAGE}"
+
+      - name: Wait until the API serves this commit
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          set -uo pipefail
+          # Render pulls the image and Spring Boot starts; allow up to 15 minutes.
+          for i in $(seq 1 90); do
+            version=$(curl -fsS --max-time 20 "${API_URL}/api/v1/meta" | python3 -c 'import sys, json; print(json.load(sys.stdin)["version"])' 2>/dev/null || true)
+            if [ "${version}" = "${GITHUB_SHA}" ]; then
+              echo "API is live on ${GITHUB_SHA}"
+              exit 0
+            fi
+            echo "Waiting for API (currently: ${version:-unreachable})"
+            sleep 10
+          done
+          echo "::error::API did not come up on ${GITHUB_SHA} within 15 minutes. Check the Render logs."
+          exit 1
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build web app for ${{ inputs.environment }}
+        working-directory: web
+        env:
+          VITE_API_BASE_URL: ${{ vars.API_URL }}
+          VITE_APP_ENV: ${{ inputs.environment }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy web app to Cloudflare Workers (static assets)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: web
+          # Pin Wrangler 4 (the action's default is older and lacks static-assets SPA support).
+          wranglerVersion: "4.158.0"
+          command: deploy --name ${{ vars.CF_WORKER_NAME }}
+
+      - name: Smoke test
+        env:
+          API_URL: ${{ vars.API_URL }}
+          WEB_URL: ${{ vars.WEB_URL }}
+        run: |
+          set -euo pipefail
+          curl -fsS --max-time 30 "${API_URL}/actuator/health" | grep -q '"UP"'
+          curl -fsS --max-time 30 "${API_URL}/api/v1/meta" | grep -q '"Atithi API"'
+          curl -fsS --max-time 30 -o /dev/null "${WEB_URL}"
+          # The web app must be served with its Content-Security-Policy (written to dist/_headers).
+          curl -fsSI --max-time 30 "${WEB_URL}" | grep -qi '^content-security-policy:'
+          echo "${{ inputs.environment }} is healthy"
