@@ -28,7 +28,11 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain apiSecurity(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
+            // The API authenticates with a Bearer token in the Authorization header, never a cookie,
+            // so a cross-site form can't act as the user: CSRF tokens aren't needed under /api/**.
+            // Protection stays on for anything else. If auth ever moves to cookies (e.g. an HttpOnly
+            // refresh-token cookie on a custom domain), those endpoints need CSRF protection again.
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
             .cors(Customizer.withDefaults())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .httpBasic(basic -> basic.disable())
