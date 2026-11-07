@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router'
-import { router } from './app/router'
+import { createRouter } from './app/router'
 import './index.css'
 
 // A free Render instance can take about a minute to wake up, so retry with backoff.
@@ -18,10 +18,11 @@ const queryClient = new QueryClient({
   },
 })
 
+// Content pages arrive pre-rendered for search engines; the app then renders over them.
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <RouterProvider router={createRouter()} />
     </QueryClientProvider>
   </StrictMode>,
 )

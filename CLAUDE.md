@@ -50,6 +50,11 @@ Atithi is a marketplace that helps foreign travellers plan safe trips to India a
 - **Privacy law:** record consent before a request reaches agents; travellers can export and delete their data (GDPR, India's DPDP Act).
 - The UI always shows emergency numbers in the footer and a non-production banner outside production.
 
+## Content
+
+- Itineraries, destinations and guides are Markdown in `web/src/content/`, pre-rendered at build time (`web/src/entry-prerender.tsx`, `web/scripts/prerender.mjs`) so search engines can read them without JavaScript.
+- Every content file needs `owner` and `lastReviewed`; the build fails when one is more than six months old. Re-check facts (opening days, permits, numbers) before bumping the date.
+
 ## Testing
 
 - Backend: end-to-end HTTP tests against a real Postgres in CI, each using unique data. Pure rules get unit tests.
