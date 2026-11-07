@@ -47,6 +47,9 @@ Use a **new Render workspace** for Atithi (top-left workspace menu → **New wor
    | `ATITHI_ENVIRONMENT` | `test` | `production` |
    | `ATITHI_CORS_ORIGINS` | the `atithi-web-test` workers.dev address | the `atithi-web` workers.dev address |
    | `ATITHI_JWT_SECRET` | recommended: 48 random characters | **required**: a different 48 random characters |
+   | `ATITHI_ADMIN_EMAILS` | your email (comma-separate several) | your email |
+
+   `ATITHI_ADMIN_EMAILS`: an account registered with one of these addresses becomes an admin (verifies agencies, matches requests). Admin tools also require that account's email to be verified. Set it **before** you register your own account.
 
    Make each secret with `openssl rand -base64 36` (or a password manager's generator). Production refuses to start without `ATITHI_JWT_SECRET`.
 

@@ -16,3 +16,41 @@
   --font-sans: "Inter Variable", system-ui, sans-serif;
   --font-display: "Fraunces Variable", Georgia, serif;
 }
+
+/* Long-form content written in Markdown (itineraries, guides). */
+.prose-atithi {
+  line-height: 1.65;
+}
+.prose-atithi h2 {
+  margin: 2rem 0 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+.prose-atithi p,
+.prose-atithi ul,
+.prose-atithi ol {
+  margin: 0.6rem 0;
+}
+.prose-atithi ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.prose-atithi ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.prose-atithi li {
+  margin: 0.25rem 0;
+}
+.prose-atithi blockquote {
+  margin: 0.5rem 0 1rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-peacock) 8%, white);
+  padding: 0.5rem 0.9rem;
+  color: var(--color-peacock);
+  font-size: 0.95rem;
+}
+.prose-atithi strong {
+  font-weight: 650;
+}

@@ -85,6 +85,7 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ vars.API_URL }}
           VITE_APP_ENV: ${{ inputs.environment }}
+          VITE_SITE_URL: ${{ vars.WEB_URL }}
         run: |
           npm ci
           npm run build
@@ -108,6 +109,8 @@ jobs:
           curl -fsS --max-time 30 "${API_URL}/actuator/health" | grep -q '"UP"'
           curl -fsS --max-time 30 "${API_URL}/api/v1/meta" | grep -q '"Atithi API"'
           curl -fsS --max-time 30 -o /dev/null "${WEB_URL}"
+          # Content pages are pre-rendered, so search engines see the itinerary without running JavaScript.
+          curl -fsS --max-time 30 "${WEB_URL}/itineraries/golden-triangle" | grep -q 'Delhi to Agra'
           # The web app must be served with its Content-Security-Policy (written to dist/_headers).
           curl -fsSI --max-time 30 "${WEB_URL}" | grep -qi '^content-security-policy:'
           echo "${{ inputs.environment }} is healthy"

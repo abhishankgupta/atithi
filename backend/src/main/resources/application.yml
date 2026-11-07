@@ -46,6 +46,16 @@ atithi:
   environment: ${ATITHI_ENVIRONMENT:local}
   version: ${ATITHI_VERSION:dev}
   cors-origins: ${ATITHI_CORS_ORIGINS:http://localhost:5173}
+  auth:
+    access-token-ttl: 15m
+    refresh-token-ttl: 30d
+    # Accounts registered with these emails become admins (comma-separated). Admin tools also need a verified email.
+    admin-emails: ${ATITHI_ADMIN_EMAILS:}
+    email-code:
+      ttl: 10m
+      max-attempts: 5
+      max-sends-per-window: 3
+      send-window: 15m
   jwt:
     # 32+ characters. Required when ATITHI_ENVIRONMENT=production (the API refuses to start without it).
     # Elsewhere, if unset, a random key is used per restart.

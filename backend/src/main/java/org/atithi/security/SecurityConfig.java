@@ -18,9 +18,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
- * Stateless API security. Public reads are open; every write needs a Bearer access token.
- * Endpoints that expose private data (a traveller's requests, an agency's leads) are added
- * as authenticated paths in their own steps.
+ * Stateless API security. Public reads are open; every write, and every read of private data,
+ * needs a Bearer access token. Finer checks (role, ownership, agency membership) happen in services.
  */
 @Configuration
 public class SecurityConfig {
@@ -43,6 +42,10 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll()
+                // Private reads: a traveller's own requests, an agency's leads, message threads, admin tools.
+                .requestMatchers("/api/v1/me", "/api/v1/me/**", "/api/v1/agency", "/api/v1/agency/**",
+                        "/api/v1/requests", "/api/v1/requests/**", "/api/v1/agent/**", "/api/v1/admin/**",
+                        "/api/v1/threads/**").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/v1/**").permitAll()
                 .anyRequest().authenticated())
             .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(rolesConverter())));
