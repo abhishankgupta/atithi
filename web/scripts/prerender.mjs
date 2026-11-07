@@ -22,7 +22,9 @@ for (const page of pages()) {
     .replace(/<meta name="description" content=".*?" \/>/, `<meta name="description" content="${escapeHtml(page.description)}" />`)
     .replace('</head>', `  <link rel="canonical" href="${siteUrl}${page.path}" />\n  </head>`)
     .replace('<div id="root"></div>', `<div id="root">${app}</div>`)
-  const file = page.path === '/' ? join(dist, 'index.html') : join(dist, page.path, 'index.html')
+  // "/itineraries/kerala" → itineraries/kerala.html: Cloudflare serves it at that exact address,
+  // with no redirect to a trailing slash (which a folder/index.html would cause).
+  const file = page.path === '/' ? join(dist, 'index.html') : join(dist, `${page.path.slice(1)}.html`)
   mkdirSync(dirname(file), { recursive: true })
   writeFileSync(file, html)
 }
